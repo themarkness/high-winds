@@ -20,10 +20,9 @@ app.innerHTML = `
   <main class="page">
     <header class="hero">
       <div>
-        <p class="eyebrow">Met Office DataHub</p>
-        <h1>Wind Gust Monitor</h1>
+        <h1>National Trust Wind Gust Monitor</h1>
         <p class="lede">
-          Check current, forecast, and recent gusts for any UK postcode. Alerts highlight gusts above 45&nbsp;mph.
+          Check Met Office current, forecast, and recent gusts for any property. Alerts highlight gusts above 45&nbsp;mph. Designed to help teams monitor safety.
         </p>
       </div>
       <form id="postcode-form" class="search">
@@ -42,8 +41,9 @@ app.innerHTML = `
       <article class="card">
         <header class="card-header">
           <div>
-            <p class="label">Current gust</p>
+            <p class="label">Current conditions</p>
             <h3 id="current-gust">--</h3>
+            <p id="current-speed" class="wind-speed">Speed: --</p>
           </div>
           <span id="current-badge" class="badge">Waiting</span>
         </header>
@@ -53,7 +53,7 @@ app.innerHTML = `
       <article class="card">
         <header class="card-header">
           <div>
-            <p class="label">Location</p>
+            <p class="label">Location of monitoring station</p>
             <h3 id="location-name">--</h3>
           </div>
           <span class="badge neutral">From DataHub</span>
@@ -91,6 +91,7 @@ const historyList = document.querySelector('#history-list')
 const locationNameEl = document.querySelector('#location-name')
 const locationMetaEl = document.querySelector('#location-meta')
 const currentGustEl = document.querySelector('#current-gust')
+const currentSpeedEl = document.querySelector('#current-speed')
 const currentBadgeEl = document.querySelector('#current-badge')
 const currentTimeEl = document.querySelector('#current-time')
 
