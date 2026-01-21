@@ -2,6 +2,8 @@ export default async function handler(req, res) {
   const apiKey = process.env.METOFFICE_API_KEY
   
   if (!apiKey) {
+    console.error('METOFFICE_API_KEY not found in environment')
+    console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('METOFFICE') || k.includes('API')))
     return res.status(500).json({ error: 'API key not configured' })
   }
 
@@ -26,8 +28,11 @@ export default async function handler(req, res) {
     })
 
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`Met Office API error ${response.status}:`, errorText)
       return res.status(response.status).json({ 
-        error: `Met Office API returned ${response.status}` 
+        error: `Met Office API returned ${response.status}`,
+        details: errorText
       })
     }
 
