@@ -42,7 +42,7 @@ app.innerHTML = `
       <article class="card">
         <header class="card-header">
           <div>
-            <p class="label">Historic</p>
+            <p class="label"><i class="ri-history-line"></i> Historic</p>
             <p class="small-text">Last 48 hours</p>
           </div>
         </header>
@@ -54,7 +54,7 @@ app.innerHTML = `
       <article class="card">
         <header class="card-header">
           <div>
-            <p class="label">Current</p>
+            <p class="label"><i class="ri-focus-2-line"></i> Current</p>
             <p class="small-text">Right now & today</p>
           </div>
         </header>
@@ -78,7 +78,7 @@ app.innerHTML = `
       <article class="card">
         <header class="card-header">
           <div>
-            <p class="label">Forecast</p>
+            <p class="label"><i class="ri-cloud-line"></i> Forecast</p>
             <p class="small-text">Next 48 hours</p>
           </div>
         </header>
@@ -91,7 +91,7 @@ app.innerHTML = `
     <section class="card">
       <header class="card-header">
         <div>
-          <p class="label">Wind data over time</p>
+          <p class="label"><i class="ri-line-chart-line"></i> Wind data over time</p>
           <h2>Wind Speed & Gusts</h2>
         </div>
       </header>
