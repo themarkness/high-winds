@@ -515,7 +515,8 @@ async function handleSearch(event) {
     console.log('Observation data sample:', obsData.features?.[0]?.properties?.timeSeries?.[0])
 
     const location = property?.forecastLocation || extractLocationName(forecastData, geo.label)
-    locationInfoEl.textContent = `${location}. Nearest monitoring location to ${property?.name} ${property?.postcode}`
+    const metOfficeUrl = `https://www.metoffice.gov.uk/weather/forecast/${geo.latitude.toFixed(2)},${geo.longitude.toFixed(2)}`
+    locationInfoEl.innerHTML = `${location}. Nearest monitoring location to ${property?.name} ${property?.postcode}. <a href="${metOfficeUrl}" target="_blank" rel="noopener noreferrer">View Met Office forecast</a>`
     
     console.log('Location from API:', location)
     console.log('Forecast location details:', forecastData.features?.[0]?.properties?.location)
