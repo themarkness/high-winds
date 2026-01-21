@@ -1,10 +1,7 @@
 import './style.css'
 
 const API_KEY = import.meta.env.VITE_METOFFICE_API_KEY
-const USE_PROXY = import.meta.env.VITE_USE_PROXY === 'true'
-const METOFFICE_BASE = USE_PROXY
-  ? '/metoffice'
-  : 'https://data.hub.api.metoffice.gov.uk/sitespecific/v0/point'
+const METOFFICE_BASE = '/api/metoffice'
 const POSTCODE_API = 'https://api.postcodes.io/postcodes/'
 const ALERT_THRESHOLD = 45 // mph
 const AMBER_THRESHOLD = 35 // mph
@@ -374,12 +371,9 @@ async function lookupPostcode(postcode) {
 }
 
 async function fetchForecast(latitude, longitude) {
-  const url = `${METOFFICE_BASE}/three-hourly?latitude=${latitude}&longitude=${longitude}&includeLocationName=true`
+  const url = `${METOFFICE_BASE}?endpoint=three-hourly&latitude=${latitude}&longitude=${longitude}&includeLocationName=true`
   const headers = {
     accept: 'application/json',
-  }
-  if (!USE_PROXY) {
-    headers['apikey'] = API_KEY
   }
   const res = await fetch(url, { headers })
   if (res.status === 401) throw new Error('Unauthorised: check your Met Office API key.')
@@ -391,12 +385,9 @@ async function fetchForecast(latitude, longitude) {
 async function fetchObservations(latitude, longitude) {
   const end = new Date()
   const start = new Date(end.getTime() - 48 * 60 * 60 * 1000)
-  const url = `${METOFFICE_BASE}/hourly?latitude=${latitude}&longitude=${longitude}&includeLocationName=true`
+  const url = `${METOFFICE_BASE}?endpoint=hourly&latitude=${latitude}&longitude=${longitude}&includeLocationName=true`
   const headers = {
     accept: 'application/json',
-  }
-  if (!USE_PROXY) {
-    headers['apikey'] = API_KEY
   }
   const res = await fetch(url, { headers })
   if (res.status === 401) throw new Error('Unauthorised: check your Met Office API key.')
