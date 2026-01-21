@@ -1,6 +1,5 @@
 import './style.css'
 
-const API_KEY = import.meta.env.VITE_METOFFICE_API_KEY
 const METOFFICE_BASE = '/api/metoffice'
 const POSTCODE_API = 'https://api.postcodes.io/postcodes/'
 const ALERT_THRESHOLD = 45 // mph
@@ -492,10 +491,6 @@ function renderWindChart(historySeries, forecastSeries) {
 
 async function handleSearch(event) {
   event.preventDefault()
-  if (!API_KEY) {
-    setStatus('Missing API key. Add VITE_METOFFICE_API_KEY to your environment.', 'danger')
-    return
-  }
 
   const postcode = new FormData(form).get('property')
   if (!postcode || !postcode.trim()) {
