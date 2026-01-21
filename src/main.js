@@ -10,8 +10,8 @@ const ALERT_THRESHOLD = 45 // mph
 const AMBER_THRESHOLD = 35 // mph
 
 const PROPERTIES = [
-  { name: 'Saltram House', postcode: 'PL7 1UH' },
-  { name: 'Cotehele', postcode: 'PL12 6TA' },
+  { name: 'Saltram House', postcode: 'PL7 1UH', forecastLocation: 'Cornwood' },
+  { name: 'Cotehele', postcode: 'PL12 6TA', forecastLocation: 'Liskeard' },
 ]
 
 const app = document.querySelector('#app')
@@ -33,67 +33,90 @@ app.innerHTML = `
         </select>
         <button type="submit">Check wind</button>
       </form>
+      <p id="location-info" class="muted" style="margin-top: 1rem;">Select a property to see monitoring location</p>
     </header>
 
     <section id="status" class="status info">Select a property to begin.</section>
 
-    <section class="grid">
+    <section class="grid-3">
       <article class="card">
         <header class="card-header">
           <div>
-            <p class="label">Current conditions</p>
-            <h3 id="current-gust">--</h3>
-            <p id="current-speed" class="wind-speed">Speed: --</p>
+            <p class="label">Historic</p>
+            <p class="small-text">Last 48 hours</p>
           </div>
-          <span id="current-badge" class="badge">Waiting</span>
         </header>
-        <p id="current-time" class="muted">No data yet</p>
+        <div id="historic-summary">
+          <p class="muted">No data</p>
+        </div>
       </article>
 
       <article class="card">
         <header class="card-header">
           <div>
-            <p class="label">Location of monitoring station</p>
-            <h3 id="location-name">--</h3>
+            <p class="label">Current</p>
+            <p class="small-text">Right now & today</p>
           </div>
-          <span class="badge neutral">From DataHub</span>
         </header>
-        <p id="location-meta" class="muted">Coordinates will appear after search.</p>
+        <div id="current-summary">
+          <div style="margin-bottom: 1.5rem;">
+            <p style="margin: 0 0 0.25rem; font-size: 0.9rem; color: #64748b;"><strong>Next hour</strong></p>
+            <h3 id="current-gust" style="margin: 0 0 0.25rem;">--</h3>
+            <p id="current-speed" class="wind-speed" style="margin: 0;">Speed: --</p>
+            <p id="current-time" class="muted" style="margin: 0.25rem 0 0;">No data yet</p>
+          </div>
+          <hr style="margin: 1rem 0; border: none; border-top: 1px solid #e2e8f0;">
+          <div>
+            <p style="margin: 0 0 0.25rem; font-size: 0.9rem; color: #64748b;"><strong>Daily summary</strong></p>
+            <h3 id="max-gust-today" style="margin: 0 0 0.25rem;">--</h3>
+            <p id="wind-direction-today" class="muted" style="margin: 0;">Direction: --</p>
+            <p id="daily-summary" class="muted" style="margin: 0.25rem 0 0;">No data yet</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <header class="card-header">
+          <div>
+            <p class="label">Forecast</p>
+            <p class="small-text">Next 48 hours</p>
+          </div>
+        </header>
+        <div id="forecast-summary">
+          <p class="muted">No data</p>
+        </div>
       </article>
     </section>
 
     <section class="card">
       <header class="card-header">
         <div>
-          <p class="label">Forecast (next 5 days)</p>
-          <h2>Timeline</h2>
+          <p class="label">Wind data over time</p>
+          <h2>Wind Speed & Gusts</h2>
         </div>
       </header>
-      <div id="forecast-list" class="timeline empty">No forecast loaded.</div>
-    </section>
-
-    <section class="card">
-      <header class="card-header">
-        <div>
-          <p class="label">Historical (last 48 hours)</p>
-          <h2>Observed gusts</h2>
-        </div>
-      </header>
-      <div id="history-list" class="timeline empty">No observations loaded.</div>
+      <div id="chart-container" class="chart-container">
+        <canvas id="wind-chart"></canvas>
+      </div>
     </section>
   </main>
 `
 
 const form = document.querySelector('#postcode-form')
 const statusEl = document.querySelector('#status')
-const forecastList = document.querySelector('#forecast-list')
-const historyList = document.querySelector('#history-list')
-const locationNameEl = document.querySelector('#location-name')
-const locationMetaEl = document.querySelector('#location-meta')
+const windChartCanvas = document.querySelector('#wind-chart')
+const historicSummaryEl = document.querySelector('#historic-summary')
+const currentSummaryEl = document.querySelector('#current-summary')
+const forecastSummaryEl = document.querySelector('#forecast-summary')
 const currentGustEl = document.querySelector('#current-gust')
 const currentSpeedEl = document.querySelector('#current-speed')
-const currentBadgeEl = document.querySelector('#current-badge')
 const currentTimeEl = document.querySelector('#current-time')
+const locationInfoEl = document.querySelector('#location-info')
+const maxGustTodayEl = document.querySelector('#max-gust-today')
+const windDirectionTodayEl = document.querySelector('#wind-direction-today')
+const dailySummaryEl = document.querySelector('#daily-summary')
+
+let windChart = null
 
 function setStatus(message, tone = 'info') {
   statusEl.textContent = message
@@ -123,6 +146,22 @@ function gustLabel(gust) {
   return `${value}${unit}`
 }
 
+function msToMph(ms) {
+  // Convert meters per second to miles per hour: m/s * 2.237
+  return ms * 2.237
+}
+
+function degreeToCompass(degrees) {
+  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
+  const index = Math.round((degrees ?? 0) / 22.5) % 16
+  return directions[index]
+}
+
+function formatWindDirection(degrees) {
+  const compass = degreeToCompass(degrees)
+  return `${compass} (${degrees}°)`
+}
+
 function extractTimeSeries(data) {
   return data?.features?.[0]?.properties?.timeSeries || []
 }
@@ -137,21 +176,107 @@ function extractLocationName(data, fallback) {
 
 function findGustValue(entry) {
   if (!entry || typeof entry !== 'object') return null
+  // Check for specific field names in order of preference
+  if (entry.windGustSpeed10m !== undefined) return msToMph(Number(entry.windGustSpeed10m))
+  if (entry.max10mWindGust !== undefined) return msToMph(Number(entry.max10mWindGust))
+  if (entry.windGust !== undefined) return msToMph(Number(entry.windGust))
+  if (entry.gustSpeed !== undefined) return msToMph(Number(entry.gustSpeed))
+  // Fallback to generic search
   const key = Object.keys(entry).find((k) => k.toLowerCase().includes('gust'))
-  return key ? Number(entry[key]) : null
+  return key ? msToMph(Number(entry[key])) : null
+}
+
+function findSpeedValue(entry) {
+  if (!entry || typeof entry !== 'object') return null
+  // Check for specific field names in order of preference
+  if (entry.windSpeed10m !== undefined) return msToMph(Number(entry.windSpeed10m))
+  if (entry.windSpeed !== undefined) return msToMph(Number(entry.windSpeed))
+  if (entry.speed !== undefined && !Object.keys(entry).some(k => k.toLowerCase().includes('gust') && entry[k] === entry.speed)) {
+    return msToMph(Number(entry.speed))
+  }
+  // Fallback to generic search
+  const key = Object.keys(entry).find((k) => {
+    const lower = k.toLowerCase()
+    return lower.includes('wind') && lower.includes('speed') && !lower.includes('gust')
+  })
+  return key ? msToMph(Number(entry[key])) : null
 }
 
 function renderCurrent(entry) {
   const gust = findGustValue(entry)
+  const speed = findSpeedValue(entry)
   currentGustEl.textContent = gustLabel(gust)
-  currentBadgeEl.className = `badge ${gustSeverity(gust)}`
-  currentBadgeEl.textContent =
-    gustSeverity(gust) === 'danger'
-      ? 'Alert'
-      : gustSeverity(gust) === 'amber'
-        ? 'Watch'
-        : 'OK'
+  currentSpeedEl.textContent = speed !== null && speed !== undefined ? `Speed: ${speed.toFixed(0)} mph` : 'Speed: --'
   currentTimeEl.textContent = entry?.time ? `Valid at ${formatDate(entry.time)}` : 'Time not provided'
+}
+
+function renderHistoricSummary(series) {
+  if (!series.length) {
+    historicSummaryEl.innerHTML = '<p class="muted">No data</p>'
+    return
+  }
+
+  const maxGustEntry = series.reduce((max, current) => {
+    const currentGust = findGustValue(current)
+    const maxGust = findGustValue(max)
+    return (currentGust ?? 0) > (maxGust ?? 0) ? current : max
+  })
+
+  const maxGust = findGustValue(maxGustEntry)
+  const avgSpeed = series.reduce((sum, d) => sum + (findSpeedValue(d) ?? 0), 0) / series.length
+
+  historicSummaryEl.innerHTML = `
+    <p style="margin: 0 0 0.5rem;"><strong>Max gust</strong></p>
+    <h3 style="margin: 0 0 0.25rem;">${gustLabel(maxGust)}</h3>
+    <p style="margin: 0; color: #64748b; font-size: 0.9rem;">Avg speed: ${avgSpeed.toFixed(0)} mph</p>
+  `
+}
+
+function renderForecastSummary(series) {
+  if (!series.length) {
+    forecastSummaryEl.innerHTML = '<p class="muted">No data</p>'
+    return
+  }
+
+  const maxGustEntry = series.reduce((max, current) => {
+    const currentGust = findGustValue(current)
+    const maxGust = findGustValue(max)
+    return (currentGust ?? 0) > (maxGust ?? 0) ? current : max
+  })
+
+  const maxGust = findGustValue(maxGustEntry)
+  const avgSpeed = series.reduce((sum, d) => sum + (findSpeedValue(d) ?? 0), 0) / series.length
+
+  forecastSummaryEl.innerHTML = `
+    <p style="margin: 0 0 0.5rem;"><strong>Max gust</strong></p>
+    <h3 style="margin: 0 0 0.25rem;">${gustLabel(maxGust)}</h3>
+    <p style="margin: 0; color: #64748b; font-size: 0.9rem;">Avg speed: ${avgSpeed.toFixed(0)} mph</p>
+  `
+}
+
+function renderDailySummary(series) {
+  if (!series.length) {
+    maxGustTodayEl.textContent = '--'
+    windDirectionTodayEl.textContent = 'Direction: --'
+    dailySummaryEl.textContent = 'No data available'
+    return
+  }
+
+  // Find max gust for today
+  const maxGustEntry = series.reduce((max, current) => {
+    const currentGust = findGustValue(current)
+    const maxGust = findGustValue(max)
+    return (currentGust ?? 0) > (maxGust ?? 0) ? current : max
+  })
+
+  const maxGust = findGustValue(maxGustEntry)
+  const windDir = maxGustEntry?.windDirectionFrom10m
+  
+  maxGustTodayEl.textContent = gustLabel(maxGust)
+  windDirectionTodayEl.textContent = `Direction: ${formatWindDirection(windDir)}`
+  
+  const compassDir = degreeToCompass(windDir)
+  dailySummaryEl.textContent = `Max gust ${gustLabel(maxGust)} from the ${compassDir}`
 }
 
 function renderForecast(series) {
@@ -168,7 +293,7 @@ function renderForecast(series) {
   
   if (!warnings.length) {
     forecastList.classList.add('empty')
-    forecastList.textContent = 'No warnings of high wind in the next 5 days.'
+    forecastList.textContent = 'No warnings of high wind in the next 48 hours.'
     return
   }
   
@@ -176,11 +301,14 @@ function renderForecast(series) {
   forecastList.innerHTML = warnings
     .map((item) => {
       const gust = findGustValue(item)
+      const speed = findSpeedValue(item)
+      const speedText = speed !== null && speed !== undefined ? `Speed: ${speed.toFixed(0)} mph` : 'Speed: --'
       return `
         <div class="timeline-row danger">
           <div>
             <p class="muted">${formatDate(item.time)}</p>
             <strong>${gustLabel(gust)}</strong>
+            <p class="wind-speed">${speedText}</p>
           </div>
           <span class="pill danger">45mph+</span>
         </div>
@@ -211,11 +339,14 @@ function renderHistory(series) {
   historyList.innerHTML = warnings
     .map((item) => {
       const gust = findGustValue(item)
+      const speed = findSpeedValue(item)
+      const speedText = speed !== null && speed !== undefined ? `Speed: ${speed.toFixed(0)} mph` : 'Speed: --'
       return `
         <div class="timeline-row danger">
           <div>
             <p class="muted">${formatDate(item.time)}</p>
             <strong>${gustLabel(gust)}</strong>
+            <p class="wind-speed">${speedText}</p>
           </div>
           <span class="pill danger">45mph+</span>
         </div>
@@ -276,7 +407,7 @@ async function fetchObservations(latitude, longitude) {
 
 function filterForecastWindow(series) {
   const now = Date.now()
-  const limit = now + 5 * 24 * 60 * 60 * 1000
+  const limit = now + 48 * 60 * 60 * 1000
   return series.filter((item) => {
     const ts = new Date(item.time).getTime()
     return ts >= now && ts <= limit
@@ -294,6 +425,78 @@ function nearestToNow(series) {
     },
     { entry: series[0], distance: Infinity },
   ).entry
+}
+
+function renderWindChart(historySeries, forecastSeries) {
+  // Combine all data and filter to 48 hours past and future
+  const now = Date.now()
+  const pastLimit = now - 48 * 60 * 60 * 1000
+  const futureLimit = now + 48 * 60 * 60 * 1000
+  
+  const allData = [...(historySeries || []), ...(forecastSeries || [])]
+    .filter(d => {
+      const ts = new Date(d.time).getTime()
+      return ts >= pastLimit && ts <= futureLimit
+    })
+    .sort((a, b) => new Date(a.time) - new Date(b.time))
+  
+  if (!allData.length) return
+  
+  const labels = allData.map(d => formatDate(d.time))
+  const speedData = allData.map(d => findSpeedValue(d))
+  const gustData = allData.map(d => findGustValue(d))
+  
+  if (windChart) {
+    windChart.destroy()
+  }
+  
+  const ctx = windChartCanvas.getContext('2d')
+  windChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Wind Speed (mph)',
+          data: speedData,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+        },
+        {
+          label: 'Gusts (mph)',
+          data: gustData,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Wind Speed (mph)',
+          },
+        },
+      },
+    },
+  })
 }
 
 async function handleSearch(event) {
@@ -314,25 +517,36 @@ async function handleSearch(event) {
 
   try {
     const geo = await lookupPostcode(postcode)
-    locationMetaEl.textContent = `Lat: ${geo.latitude.toFixed(4)}, Lon: ${geo.longitude.toFixed(4)}`
+    
+    const property = PROPERTIES.find(p => p.postcode === postcode)
 
     const [forecastData, obsData] = await Promise.all([
       fetchForecast(geo.latitude, geo.longitude),
       fetchObservations(geo.latitude, geo.longitude),
     ])
+    
+    console.log('Forecast data sample:', forecastData.features?.[0]?.properties?.timeSeries?.[0])
+    console.log('Observation data sample:', obsData.features?.[0]?.properties?.timeSeries?.[0])
 
-    const location = extractLocationName(forecastData, geo.label)
-    locationNameEl.textContent = location
+    const location = property?.forecastLocation || extractLocationName(forecastData, geo.label)
+    locationInfoEl.textContent = `${location}. Nearest monitoring location to ${property?.name} ${property?.postcode}`
+    
+    console.log('Location from API:', location)
+    console.log('Forecast location details:', forecastData.features?.[0]?.properties?.location)
 
     const forecastSeries = filterForecastWindow(extractTimeSeries(forecastData))
     const historySeries = extractTimeSeries(obsData)
 
-    renderForecast(forecastSeries)
-    renderHistory(historySeries)
+    renderWindChart(historySeries, forecastSeries)
+    
+    // Render 3 summary boxes at top
+    renderHistoricSummary(historySeries)
+    renderForecastSummary(forecastSeries)
 
     const currentEntry =
       forecastSeries.length > 0 ? nearestToNow(forecastSeries) : historySeries.at(-1) || forecastSeries[0]
     renderCurrent(currentEntry)
+    renderDailySummary(forecastSeries.length > 0 ? forecastSeries : historySeries)
 
     const highestForecast = Math.max(...forecastSeries.map((f) => findGustValue(f) ?? 0))
     const highestHistory = Math.max(...historySeries.map((f) => findGustValue(f) ?? 0))
@@ -349,8 +563,6 @@ async function handleSearch(event) {
   } catch (error) {
     console.error(error)
     setStatus(error.message || 'Something went wrong. Please try again.', 'danger')
-    renderForecast([])
-    renderHistory([])
     renderCurrent({})
   } finally {
     form.querySelector('button').disabled = false

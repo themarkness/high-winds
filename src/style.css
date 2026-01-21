@@ -137,6 +137,12 @@ h1 {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
+.small-text {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0.25rem 0 0;
+}
+
 .status.info {
   border-color: #cbd5e1;
   color: #0f172a;
@@ -165,7 +171,23 @@ h1 {
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
+.grid-3 {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(3, 1fr);
+}
 
+@media (max-width: 1024px) {
+  .grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
 .card {
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -329,4 +351,16 @@ h3 {
     align-items: flex-start;
     gap: 0.35rem;
   }
+}
+.chart-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.5rem;
+  margin-top: 1rem;
+}
+
+.chart-container canvas {
+  min-width: 1200px;
+  max-width: 100%;
+  height: 300px;
 }
