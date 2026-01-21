@@ -569,3 +569,159 @@ a:hover {
     gap: 0.35rem;
   }
 }
+
+/* ==============================
+   BREEZY STYLE REFINEMENTS
+   ============================== */
+
+/* ---- Softer color palette ---- */
+:root {
+  --primary: #3b82f6;
+  --primary-dark: #2563eb;
+  --danger: #dc2626;
+  --warning: #d97706;
+  --success: #16a34a;
+
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --border: #e2e8f0;
+
+  --shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+
+/* ---- Page background: calm & flat ---- */
+body {
+  background: var(--bg);
+}
+
+/* ---- Hero: flatten + soften ---- */
+.hero {
+  background: #f8fafc;
+  color: var(--text);
+  box-shadow: none;
+  border: 1px solid var(--border);
+}
+
+.hero h1 {
+  color: var(--text);
+}
+
+.hero .lede {
+  color: var(--text-light);
+}
+
+/* ---- Search bar: quieter ---- */
+.search {
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+/* ---- Cards: flat, stable ---- */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  transition: none;
+}
+
+.card:hover {
+  box-shadow: var(--shadow);
+  transform: none;
+}
+
+/* ---- Card headers: calmer ---- */
+.card-header .label {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+/* ---- Primary values dominate ---- */
+.card-header h3 {
+  font-size: 2.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* ---- Status banner: subtle ---- */
+.status {
+  box-shadow: none;
+  border: 1px solid var(--border);
+}
+
+.status.success {
+  background: rgba(22, 163, 74, 0.08);
+  color: var(--success);
+}
+
+.status.warning {
+  background: rgba(217, 119, 6, 0.08);
+  color: var(--warning);
+}
+
+.status.danger {
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--danger);
+}
+
+/* ---- Pills & badges: low contrast ---- */
+.badge,
+.pill {
+  font-weight: 600;
+  border-radius: 999px;
+}
+
+.badge.safe,
+.pill.safe {
+  background: rgba(22, 163, 74, 0.12);
+  color: var(--success);
+}
+
+.badge.amber,
+.pill.amber {
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--warning);
+}
+
+.badge.danger,
+.pill.danger {
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--danger);
+}
+
+/* ---- Timeline rows: flat + tinted ---- */
+.timeline-row {
+  background: #ffffff;
+  border: 1px solid var(--border);
+}
+
+.timeline-row:hover {
+  background: #f1f5f9;
+}
+
+.timeline-row.danger {
+  background: rgba(220, 38, 38, 0.06);
+  border-color: rgba(220, 38, 38, 0.25);
+}
+
+.timeline-row.amber {
+  background: rgba(217, 119, 6, 0.06);
+  border-color: rgba(217, 119, 6, 0.25);
+}
+
+/* ---- Chart container: neutral paper ---- */
+.chart-container {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+/* ---- Links: quieter underline ---- */
+a {
+  border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+a:hover {
+  border-bottom-color: var(--primary-dark);
+}
